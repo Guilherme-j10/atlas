@@ -1,4 +1,4 @@
-use std::{net::SocketAddr};
+use std::net::SocketAddr;
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream},
@@ -20,12 +20,16 @@ async fn handle_socket_connection(mut stream: TcpStream, _: SocketAddr) {
                 break;
             }
             Ok(n) => {
-                println!("bytes: {}, Decimal is {:?}", n, &buffer_operation[..n])
+                println!(
+                    "bytes: {}, Decimal is {:?}",
+                    n,
+                    String::from_utf8(buffer_operation[..n].to_vec())
+                )
             }
             Err(e) => {
                 println!("Erro in read message: {}", e);
                 break;
-            } 
+            }
         }
     }
 }
