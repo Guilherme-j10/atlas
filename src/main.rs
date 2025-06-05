@@ -1,7 +1,8 @@
 mod types;
 
+use std::sync::Arc;
+
 use serde_json::Value;
-use std::net::SocketAddr;
 use tokio::{
     io::AsyncReadExt,
     net::{TcpListener, TcpStream},
@@ -9,7 +10,9 @@ use tokio::{
 
 use crate::types::types::MessageProtocol;
 
-async fn read_protocol(stream: &mut TcpStream) -> Result<MessageProtocol, Box<dyn std::error::Error>> {
+async fn read_protocol(
+    stream: &mut TcpStream,
+) -> Result<MessageProtocol, Box<dyn std::error::Error>> {
     let mut buffer_operation = [0u8; 3];
     stream.read_exact(&mut buffer_operation).await.unwrap();
 
@@ -33,33 +36,48 @@ async fn read_protocol(stream: &mut TcpStream) -> Result<MessageProtocol, Box<dy
     Ok(MessageProtocol {
         operation: *operation,
         bytes: complete_bytes,
-        payload: serde_json::from_str::<Value>(&payload_content).unwrap()
-    }) 
+        payload: serde_json::from_str::<Value>(&payload_content).unwrap(),
+    })
 }
 
-async fn handle_socket_connection(mut stream: TcpStream, _: SocketAddr) {
-    loop {
-        match read_protocol(&mut stream).await {
-            Ok(message) => {
-                println!("Operation: {:?}", message.operation);
-                println!("BytesSize: {:?}", message.bytes);
-                println!("Payload: {:?}", message.payload);
-            }
-            Err(e) => {
-                panic!("{:?}", e);
-            }
-        }
+struct Broker;
+impl Broker {
+    fn new() -> Self {
+        Broker
     }
+
+    fn initialize_topics(&self) {}
+    fn register_consumer(&self) {}
+    fn register_message_from_producer(&self) {}
 }
 
 #[tokio::main]
 async fn main() {
     let listener = TcpListener::bind("0.0.0.0:8787").await.unwrap();
 
+    let broker = Arc::new(Broker::new());
+    broker.initialize_topics();
+
     loop {
-        let (stream, _addr) = listener.accept().await.unwrap();
+        let broker_instace = Arc::clone(&broker);
+        let (mut stream, _addr) = listener.accept().await.unwrap();
+
         tokio::spawn(async move {
-            handle_socket_connection(stream, _addr).await;
+            loop {
+                match read_protocol(&mut stream).await {
+                    Ok(message) => {
+                        if message.operation == 1 {
+                            broker_instace.register_message_from_producer();
+                        }
+                        if message.operation == 2 {
+                            broker_instace.register_consumer();
+                        }
+                    }
+                    Err(e) => {
+                        panic!("{:?}", e);
+                    }
+                }
+            }
         });
     }
 }
