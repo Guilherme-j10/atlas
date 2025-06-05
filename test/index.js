@@ -1,32 +1,34 @@
 const net = require('net');
 
 function sendBinaryMessage(socket, operation, payload) {
-  const data = Buffer.from(JSON.stringify(payload)); // 6 bytes
-  const realSize = data.length; // 6
-  const realSizeBuffer = Buffer.from([realSize]); // 1 byte
-  const sizeLength = realSizeBuffer.length; // 1 byte, pois realSize cabe em 1 byte
+  const data = JSON.stringify(payload);
+  const messageBytesLength = data.length;
+  const messageBytesAmount = String(`${messageBytesLength}`.length).padStart(2, "0");
+
+  const bufferBytesData = Buffer.alloc(parseInt(messageBytesAmount));
+
+  const bytes = `${messageBytesLength}`.split("");
+  for (let i = 0; i < bytes.length; i++) {
+    bufferBytesData.writeInt8(parseInt(bytes[i]), i);
+  }
 
   const messageBuffer = Buffer.concat([
-    Buffer.from([operation]),              // [operation]
-    Buffer.from([sizeLength]),             // [size_length]
-    realSizeBuffer,                        // [real_size]
-    data// [payload]
+    Buffer.from([operation]),
+    Buffer.alloc(2, messageBytesAmount),
+    bufferBytesData,
+    Buffer.from(data)
   ]);
   socket.write(messageBuffer);
 }
 
-// Criar conexão TCP com o servidor Rust
 const client = new net.Socket();
-
 client.connect(8787, '127.0.0.1', () => {
   console.log('Conectado ao servidor Rust');
 
-  // Exemplo: enviar uma mensagem com operação 1 e payload "Hello"
   sendBinaryMessage(client, 1, {
-    topic: "cart",
+    topic: "cart"
   });
 
-  // Opcionalmente encerrar a conexão após enviar
   //client.end();
 });
 
