@@ -23,10 +23,15 @@ function sendBinaryMessage(socket, operation, payload) {
 
 const client = new net.Socket();
 client.connect(8787, '127.0.0.1', () => {
-  console.log('Conectado ao servidor Rust');
+  console.log('Conectado ao servidor');
 
   sendBinaryMessage(client, 1, {
-    topic: "cart"
+    topic: "cart",
+    payload: {
+      data: {
+        user: "001"
+      }
+    }
   });
 
   //client.end();

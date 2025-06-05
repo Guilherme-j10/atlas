@@ -1,3 +1,5 @@
+mod types;
+
 use serde_json::Value;
 use std::net::SocketAddr;
 use tokio::{
@@ -5,12 +7,7 @@ use tokio::{
     net::{TcpListener, TcpStream},
 };
 
-#[derive(Debug)]
-struct MessageProtocol {
-    operation: u8,
-    bytes: u32,
-    payload: Value,
-}
+use crate::types::types::MessageProtocol;
 
 async fn read_protocol(stream: &mut TcpStream) -> Result<MessageProtocol, Box<dyn std::error::Error>> {
     let mut buffer_operation = [0u8; 3];
@@ -44,7 +41,9 @@ async fn handle_socket_connection(mut stream: TcpStream, _: SocketAddr) {
     loop {
         match read_protocol(&mut stream).await {
             Ok(message) => {
-                println!("{:?}", message);
+                println!("Operation: {:?}", message.operation);
+                println!("BytesSize: {:?}", message.bytes);
+                println!("Payload: {:?}", message.payload);
             }
             Err(e) => {
                 panic!("{:?}", e);
